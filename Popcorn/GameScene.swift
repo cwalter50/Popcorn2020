@@ -9,81 +9,57 @@
 import SpriteKit
 import GameplayKit
 
-class GameScene: SKScene {
+class GameScene: SKScene, SKPhysicsContactDelegate {
     
-    private var label : SKLabelNode?
-    private var spinnyNode : SKShapeNode?
+    var popCornSprite : SKSpriteNode?
+    var randomVector : CGVector?
     
-    override func didMove(to view: SKView) {
+    override func didMove(to view: SKView)
+    {
+        self.physicsBody = SKPhysicsBody(edgeLoopFrom: frame)
+        self.physicsBody?.isDynamic = true
         
-        // Get label node from scene and store it for use later
-        self.label = self.childNode(withName: "//helloLabel") as? SKLabelNode
-        if let label = self.label {
-            label.alpha = 0.0
-            label.run(SKAction.fadeIn(withDuration: 2.0))
-        }
+        randomVector = CGVector(dx: Int(arc4random_uniform(200)), dy: Int(arc4random_uniform(200)))
+        addPopCorn(location: CGPoint(x: 120, y: 120))
+        addPopCorn(location: CGPoint(x: 250, y: 290))
         
-        // Create shape node to use during mouse interaction
-        let w = (self.size.width + self.size.height) * 0.05
-        self.spinnyNode = SKShapeNode.init(rectOf: CGSize.init(width: w, height: w), cornerRadius: w * 0.3)
+        physicsBody?.categoryBitMask = 4
         
-        if let spinnyNode = self.spinnyNode {
-            spinnyNode.lineWidth = 2.5
+        
+        physicsWorld.contactDelegate = self
+    }
+    
+    var count = 0
+    func didEnd(_ contact: SKPhysicsContact) {
+        print("contact")
+        
+        if count < 50
+        {
             
-            spinnyNode.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat(Double.pi), duration: 1)))
-            spinnyNode.run(SKAction.sequence([SKAction.wait(forDuration: 0.5),
-                                              SKAction.fadeOut(withDuration: 0.5),
-                                              SKAction.removeFromParent()]))
+            count = count + 1
+            addPopCorn(location: contact.contactPoint)
         }
-    }
-    
-    
-    func touchDown(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.green
-            self.addChild(n)
-        }
-    }
-    
-    func touchMoved(toPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.blue
-            self.addChild(n)
-        }
-    }
-    
-    func touchUp(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.red
-            self.addChild(n)
-        }
-    }
-    
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if let label = self.label {
-            label.run(SKAction.init(named: "Pulse")!, withKey: "fadeInOut")
-        }
+
         
-        for t in touches { self.touchDown(atPoint: t.location(in: self)) }
     }
     
-    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchMoved(toPoint: t.location(in: self)) }
+    func addPopCorn(location : CGPoint)
+    {
+        popCornSprite = SKSpriteNode(imageNamed: "popcorn1")
+        popCornSprite!.size = CGSize(width: 50, height: 50)
+        popCornSprite?.position = location
+        addChild(popCornSprite!)
+        
+        popCornSprite?.physicsBody = SKPhysicsBody(circleOfRadius: 25)
+        popCornSprite?.physicsBody?.isDynamic = true
+        popCornSprite?.physicsBody?.restitution = 1.1
+        popCornSprite?.physicsBody?.allowsRotation = true
+        popCornSprite?.physicsBody?.applyAngularImpulse(2)
+        popCornSprite?.physicsBody?.applyForce(randomVector!)
+        
+        popCornSprite?.physicsBody?.categoryBitMask = 3
+        popCornSprite?.physicsBody?.contactTestBitMask = 3
     }
     
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchUp(atPoint: t.location(in: self)) }
-    }
-    
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchUp(atPoint: t.location(in: self)) }
-    }
-    
-    
-    override func update(_ currentTime: TimeInterval) {
-        // Called before each frame is rendered
-    }
+
 }
